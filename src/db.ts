@@ -47,10 +47,10 @@ const SEED_DATA: PetroMapiData = {
   personales: [
     {
       id_personal: 1,
-      nombre_completo: 'Kefren Darly Chuquitapa Flores',
+      nombre_completo: 'Kefren',
       usuario: 'Kefren',
       correo: 'kefren@petromapi.com',
-      contrasena: 'Kefren132', // Se puede validar directo con Kefren132
+      contrasena: 'Kefren123',
       rol: 'Administradores (Full Acceso)',
       estado: 1
     },
@@ -89,15 +89,6 @@ const SEED_DATA: PetroMapiData = {
       contrasena: 'Petro2026',
       rol: 'Supervisor de Control',
       estado: 1
-    },
-    {
-      id_personal: 10,
-      nombre_completo: 'Kefren',
-      usuario: 'Kefren',
-      correo: 'kefren@petromapi.com',
-      contrasena: 'Kefren123',
-      rol: 'Administradores (Full Acceso)',
-      estado: 1
     }
   ],
   modulos: [
@@ -116,11 +107,7 @@ const SEED_DATA: PetroMapiData = {
     { id_personal: 3, id_modulo: 1 },
     { id_personal: 3, id_modulo: 2 },
     { id_personal: 5, id_modulo: 2 },
-    { id_personal: 5, id_modulo: 3 },
-    { id_personal: 10, id_modulo: 1 },
-    { id_personal: 10, id_modulo: 2 },
-    { id_personal: 10, id_modulo: 3 },
-    { id_personal: 10, id_modulo: 4 }
+    { id_personal: 5, id_modulo: 3 }
   ],
   conductores: [
     { id_conductor: 1, nombre: 'Ricardo', apellido: 'Castillo Mora', licencia: 'Q283726A', telefono: '938291029' },
@@ -179,7 +166,7 @@ const SEED_DATA: PetroMapiData = {
 
 export function ensureAdminAccs(dbData: PetroMapiData): { data: PetroMapiData; modified: boolean } {
   const requiredAdmin = {
-    id_personal: 10,
+    id_personal: 1,
     nombre_completo: 'Kefren',
     usuario: 'Kefren',
     correo: 'kefren@petromapi.com',
@@ -192,33 +179,34 @@ export function ensureAdminAccs(dbData: PetroMapiData): { data: PetroMapiData; m
   let personalesCopy = dbData.personales ? [...dbData.personales] : [];
   let permisosCopy = dbData.permisos_modulo ? [...dbData.permisos_modulo] : [];
 
-  // Remove administrative/legacy user accounts who are not Kefren
+  // Remove administrative/legacy user accounts who are not Kefren (filtering out legacy IDs and old usernames)
   const beforeLength = personalesCopy.length;
   personalesCopy = personalesCopy.filter(p => {
-    const isOtherAdmin =
+    const isLegacyAdmin =
       p.id_personal === 11 ||
       p.id_personal === 12 ||
       p.usuario.toLowerCase() === 'admin' ||
       p.usuario.toLowerCase() === '018100461a' ||
       p.usuario.toLowerCase() === '018100461a@gmail.com' ||
-      (p.rol.includes('Administrador') && p.usuario.toLowerCase() !== 'kefren');
-    return !isOtherAdmin;
+      (p.usuario.toLowerCase() === 'kefren' && p.id_personal === 10); // delete duplicate Kefren at ID 10
+    return !isLegacyAdmin;
   });
 
   if (personalesCopy.length !== beforeLength) {
     modified = true;
   }
 
-  // Ensure Kefren exists with correct password & role
+  // Ensure Kefren exists with correct password & role under id_personal: 1
   const existingIndex = personalesCopy.findIndex(p => p.usuario.toLowerCase() === 'kefren');
   if (existingIndex === -1) {
     personalesCopy.push(requiredAdmin);
     modified = true;
   } else {
     const existing = personalesCopy[existingIndex];
-    if (existing.contrasena !== requiredAdmin.contrasena || existing.rol !== requiredAdmin.rol || existing.estado !== 1) {
+    if (existing.contrasena !== requiredAdmin.contrasena || existing.rol !== requiredAdmin.rol || existing.estado !== 1 || existing.id_personal !== 1) {
       personalesCopy[existingIndex] = {
         ...existing,
+        id_personal: 1,
         contrasena: requiredAdmin.contrasena,
         rol: requiredAdmin.rol,
         estado: 1
@@ -227,15 +215,15 @@ export function ensureAdminAccs(dbData: PetroMapiData): { data: PetroMapiData; m
     }
   }
 
-  // Remove permissions associated with deleted administrator IDs
+  // Remove permissions associated with deleted administrator IDs (including legacy ID 10 duplicate)
   const beforePermsLength = permisosCopy.length;
-  permisosCopy = permisosCopy.filter(pm => pm.id_personal !== 11 && pm.id_personal !== 12);
+  permisosCopy = permisosCopy.filter(pm => pm.id_personal !== 10 && pm.id_personal !== 11 && pm.id_personal !== 12);
   if (permisosCopy.length !== beforePermsLength) {
     modified = true;
   }
 
-  // Ensure Kefren (id_personal: 10) has all 4 module permissions
-  const kefrenId = personalesCopy.find(p => p.usuario.toLowerCase() === 'kefren')?.id_personal || 10;
+  // Ensure Kefren (id_personal: 1) has all 4 module permissions
+  const kefrenId = personalesCopy.find(p => p.usuario.toLowerCase() === 'kefren')?.id_personal || 1;
   const requiredModules = [1, 2, 3, 4];
   for (const modId of requiredModules) {
     const hasPerm = permisosCopy.some(pm => pm.id_personal === kefrenId && pm.id_modulo === modId);
