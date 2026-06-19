@@ -167,7 +167,7 @@ export default function PersonalView({
           const userModules = modulos.filter(m => userModuleIds.includes(m.id_modulo));
           const isAdmin = p.rol === 'Administrador' || p.rol === 'Administradores (Full Acceso)';
           const currentUserIsAdmin = currentUser?.rol === 'Administrador' || currentUser?.rol === 'Administradores (Full Acceso)';
-          const canEditThisWorker = currentUserIsAdmin || currentUser?.id_personal === p.id_personal;
+          const canEditThisWorker = currentUserIsAdmin;
 
           return (
             <div

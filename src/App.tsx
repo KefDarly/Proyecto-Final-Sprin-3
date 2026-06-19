@@ -484,94 +484,111 @@ export default function App() {
         </main>
       </div>
       {/* GLOBAL PROFILE MODAL */}
-      {showProfileModal && (
-        <div className="fixed inset-0 z-[110] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 select-none animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded shadow-2xl flex flex-col">
-            <div className="p-4 border-b border-slate-800 flex justify-between items-center">
-              <div>
-                <h3 className="font-sans text-sm font-black text-slate-100 uppercase tracking-wider">Mi Perfil de Usuario</h3>
-                <p className="text-[10px] text-slate-400 font-mono">Gestione sus credenciales de acceso personales.</p>
-              </div>
-              <button 
-                onClick={() => setShowProfileModal(false)} 
-                className="text-slate-500 hover:text-slate-200 transition-colors cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-lg">close</span>
-              </button>
-            </div>
-
-            <form onSubmit={handleProfileSubmit} className="p-5 space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Nombre Completo</label>
-                <input
-                  type="text"
-                  required
-                  value={profileNombre}
-                  onChange={(e) => setProfileNombre(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-850 hover:border-slate-800 rounded px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-[#10b981] transition-all"
-                />
+      {showProfileModal && (() => {
+        const isProfileEditable = currentUser?.rol === 'Administrador' || currentUser?.rol === 'Administradores (Full Acceso)';
+        return (
+          <div className="fixed inset-0 z-[110] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 select-none animate-in fade-in duration-200">
+            <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded shadow-2xl flex flex-col">
+              <div className="p-4 border-b border-slate-800 flex justify-between items-center">
+                <div>
+                  <h3 className="font-sans text-sm font-black text-slate-100 uppercase tracking-wider">Mi Perfil de Usuario</h3>
+                  <p className="text-[10px] text-slate-400 font-mono">
+                    {isProfileEditable ? "Gestione sus credenciales de acceso personales." : "Visualice sus credenciales asignadas en el sistema."}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setShowProfileModal(false)} 
+                  className="text-slate-500 hover:text-slate-200 transition-colors cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <form onSubmit={handleProfileSubmit} className="p-5 space-y-4 text-xs">
+                {!isProfileEditable && (
+                  <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 p-2.5 rounded text-[10px] font-mono leading-relaxed">
+                    ⚠️ MODO SOLO LECTURA: Su cuenta no cuenta con permisos de administrador para modificar credenciales. Si requiere cambiar sus datos, por favor solicítelo al Administrador del sistema.
+                  </div>
+                )}
+
                 <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Usuario (Login ID)</label>
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Nombre Completo</label>
                   <input
                     type="text"
                     required
-                    value={profileUsuario}
-                    onChange={(e) => setProfileUsuario(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-850 hover:border-slate-800 rounded px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-[#10b981] transition-all"
+                    disabled={!isProfileEditable}
+                    value={profileNombre}
+                    onChange={(e) => setProfileNombre(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-850 hover:border-slate-800 rounded px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-[#10b981] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Usuario (Login ID)</label>
+                    <input
+                      type="text"
+                      required
+                      disabled={!isProfileEditable}
+                      value={profileUsuario}
+                      onChange={(e) => setProfileUsuario(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-850 hover:border-slate-800 rounded px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-[#10b981] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Correo Electrónico</label>
+                    <input
+                      type="email"
+                      required
+                      disabled={!isProfileEditable}
+                      value={profileCorreo}
+                      onChange={(e) => setProfileCorreo(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-850 hover:border-slate-800 rounded px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-[#10b981] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Correo Electrónico</label>
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Contraseña de Acceso</label>
                   <input
-                    type="email"
+                    type="text"
                     required
-                    value={profileCorreo}
-                    onChange={(e) => setProfileCorreo(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-850 hover:border-slate-800 rounded px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-[#10b981] transition-all"
+                    disabled={!isProfileEditable}
+                    value={profileContrasena}
+                    onChange={(e) => setProfileContrasena(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-850 hover:border-slate-800 rounded px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-[#10b981] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
-              </div>
 
-              <div className="space-y-1">
-                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Contraseña de Acceso</label>
-                <input
-                  type="text"
-                  required
-                  value={profileContrasena}
-                  onChange={(e) => setProfileContrasena(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-850 hover:border-slate-800 rounded px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-[#10b981] transition-all"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Rol de Sistema (No Editable)</label>
-                <div className="w-full bg-slate-950/60 border border-slate-850 rounded px-3 py-2 text-xs text-slate-400 font-mono">
-                  {currentUser?.rol}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Rol de Sistema (No Editable)</label>
+                  <div className="w-full bg-slate-950/60 border border-slate-850 rounded px-3 py-2 text-xs text-slate-400 font-mono">
+                    {currentUser?.rol}
+                  </div>
                 </div>
-              </div>
 
-              <div className="pt-4 border-t border-slate-800 flex justify-end gap-3 -mx-5 -mb-5 bg-slate-950/60 p-4">
-                <button
-                  type="button"
-                  onClick={() => setShowProfileModal(false)}
-                  className="px-3.5 py-1.5 uppercase text-slate-500 hover:text-slate-200 font-bold tracking-tight text-xs transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 uppercase bg-primary text-slate-950 font-black rounded hover:bg-[#6ee7b7] transition-all cursor-pointer text-xs"
-                >
-                  Actualizar Perfil
-                </button>
-              </div>
-            </form>
+                <div className="pt-4 border-t border-slate-800 flex justify-end gap-3 -mx-5 -mb-5 bg-slate-950/60 p-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowProfileModal(false)}
+                    className="px-3.5 py-1.5 uppercase text-slate-500 hover:text-slate-200 font-bold tracking-tight text-xs transition-colors"
+                  >
+                    {isProfileEditable ? "Cancelar" : "Cerrar"}
+                  </button>
+                  {isProfileEditable && (
+                    <button
+                      type="submit"
+                      className="px-4 py-1.5 uppercase bg-primary text-slate-950 font-black rounded hover:bg-[#6ee7b7] transition-all cursor-pointer text-xs"
+                    >
+                      Actualizar Perfil
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
