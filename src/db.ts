@@ -92,28 +92,10 @@ const SEED_DATA: PetroMapiData = {
     },
     {
       id_personal: 10,
-      nombre_completo: 'Administrador Principal',
-      usuario: 'admin',
-      correo: 'admin@petromapi.com',
-      contrasena: 'admin',
-      rol: 'Administradores (Full Acceso)',
-      estado: 1
-    },
-    {
-      id_personal: 11,
-      nombre_completo: 'Administrador 01815',
-      usuario: '018100461a',
-      correo: '018100461a@gmail.com',
-      contrasena: 'admin',
-      rol: 'Administradores (Full Acceso)',
-      estado: 1
-    },
-    {
-      id_personal: 12,
-      nombre_completo: 'Administrador General (Email)',
-      usuario: '018100461a@gmail.com',
-      correo: '018100461a@gmail.com',
-      contrasena: 'admin',
+      nombre_completo: 'Kefren',
+      usuario: 'Kefren',
+      correo: 'kefren@petromapi.com',
+      contrasena: 'Kefren123',
       rol: 'Administradores (Full Acceso)',
       estado: 1
     }
@@ -138,15 +120,7 @@ const SEED_DATA: PetroMapiData = {
     { id_personal: 10, id_modulo: 1 },
     { id_personal: 10, id_modulo: 2 },
     { id_personal: 10, id_modulo: 3 },
-    { id_personal: 10, id_modulo: 4 },
-    { id_personal: 11, id_modulo: 1 },
-    { id_personal: 11, id_modulo: 2 },
-    { id_personal: 11, id_modulo: 3 },
-    { id_personal: 11, id_modulo: 4 },
-    { id_personal: 12, id_modulo: 1 },
-    { id_personal: 12, id_modulo: 2 },
-    { id_personal: 12, id_modulo: 3 },
-    { id_personal: 12, id_modulo: 4 }
+    { id_personal: 10, id_modulo: 4 }
   ],
   conductores: [
     { id_conductor: 1, nombre: 'Ricardo', apellido: 'Castillo Mora', licencia: 'Q283726A', telefono: '938291029' },
@@ -204,79 +178,69 @@ const SEED_DATA: PetroMapiData = {
 };
 
 export function ensureAdminAccs(dbData: PetroMapiData): { data: PetroMapiData; modified: boolean } {
-  const requiredAdmins = [
-    {
-      id_personal: 10,
-      nombre_completo: 'Administrador Principal',
-      usuario: 'admin',
-      correo: 'admin@petromapi.com',
-      contrasena: 'admin',
-      rol: 'Administradores (Full Acceso)',
-      estado: 1
-    },
-    {
-      id_personal: 11,
-      nombre_completo: 'Administrador 01815',
-      usuario: '018100461a',
-      correo: '018100461a@gmail.com',
-      contrasena: 'admin',
-      rol: 'Administradores (Full Acceso)',
-      estado: 1
-    },
-    {
-      id_personal: 12,
-      nombre_completo: 'Administrador General (Email)',
-      usuario: '018100461a@gmail.com',
-      correo: '018100461a@gmail.com',
-      contrasena: 'admin',
-      rol: 'Administradores (Full Acceso)',
-      estado: 1
-    }
-  ];
+  const requiredAdmin = {
+    id_personal: 10,
+    nombre_completo: 'Kefren',
+    usuario: 'Kefren',
+    correo: 'kefren@petromapi.com',
+    contrasena: 'Kefren123',
+    rol: 'Administradores (Full Acceso)',
+    estado: 1
+  };
 
   let modified = false;
-  // Deep or surface clone of lists to keep it safe from mutations
-  const personalesCopy = dbData.personales ? [...dbData.personales] : [];
-  const permisosCopy = dbData.permisos_modulo ? [...dbData.permisos_modulo] : [];
+  let personalesCopy = dbData.personales ? [...dbData.personales] : [];
+  let permisosCopy = dbData.permisos_modulo ? [...dbData.permisos_modulo] : [];
 
-  for (const admin of requiredAdmins) {
-    const existingIndex = personalesCopy.findIndex(p => p.usuario.toLowerCase() === admin.usuario.toLowerCase());
-    if (existingIndex === -1) {
-      personalesCopy.push(admin);
+  // Remove administrative/legacy user accounts who are not Kefren
+  const beforeLength = personalesCopy.length;
+  personalesCopy = personalesCopy.filter(p => {
+    const isOtherAdmin =
+      p.id_personal === 11 ||
+      p.id_personal === 12 ||
+      p.usuario.toLowerCase() === 'admin' ||
+      p.usuario.toLowerCase() === '018100461a' ||
+      p.usuario.toLowerCase() === '018100461a@gmail.com' ||
+      (p.rol.includes('Administrador') && p.usuario.toLowerCase() !== 'kefren');
+    return !isOtherAdmin;
+  });
+
+  if (personalesCopy.length !== beforeLength) {
+    modified = true;
+  }
+
+  // Ensure Kefren exists with correct password & role
+  const existingIndex = personalesCopy.findIndex(p => p.usuario.toLowerCase() === 'kefren');
+  if (existingIndex === -1) {
+    personalesCopy.push(requiredAdmin);
+    modified = true;
+  } else {
+    const existing = personalesCopy[existingIndex];
+    if (existing.contrasena !== requiredAdmin.contrasena || existing.rol !== requiredAdmin.rol || existing.estado !== 1) {
+      personalesCopy[existingIndex] = {
+        ...existing,
+        contrasena: requiredAdmin.contrasena,
+        rol: requiredAdmin.rol,
+        estado: 1
+      };
       modified = true;
-    } else {
-      const existing = personalesCopy[existingIndex];
-      if (existing.contrasena !== admin.contrasena || existing.rol !== admin.rol || existing.estado !== 1) {
-        personalesCopy[existingIndex] = {
-          ...existing,
-          contrasena: admin.contrasena,
-          rol: admin.rol,
-          estado: 1
-        };
-        modified = true;
-      }
     }
   }
 
-  const requiredPermisos = [
-    { id_personal: 10, id_modulo: 1 },
-    { id_personal: 10, id_modulo: 2 },
-    { id_personal: 10, id_modulo: 3 },
-    { id_personal: 10, id_modulo: 4 },
-    { id_personal: 11, id_modulo: 1 },
-    { id_personal: 11, id_modulo: 2 },
-    { id_personal: 11, id_modulo: 3 },
-    { id_personal: 11, id_modulo: 4 },
-    { id_personal: 12, id_modulo: 1 },
-    { id_personal: 12, id_modulo: 2 },
-    { id_personal: 12, id_modulo: 3 },
-    { id_personal: 12, id_modulo: 4 }
-  ];
+  // Remove permissions associated with deleted administrator IDs
+  const beforePermsLength = permisosCopy.length;
+  permisosCopy = permisosCopy.filter(pm => pm.id_personal !== 11 && pm.id_personal !== 12);
+  if (permisosCopy.length !== beforePermsLength) {
+    modified = true;
+  }
 
-  for (const perm of requiredPermisos) {
-    const hasPerm = permisosCopy.some(pm => pm.id_personal === perm.id_personal && pm.id_modulo === perm.id_modulo);
+  // Ensure Kefren (id_personal: 10) has all 4 module permissions
+  const kefrenId = personalesCopy.find(p => p.usuario.toLowerCase() === 'kefren')?.id_personal || 10;
+  const requiredModules = [1, 2, 3, 4];
+  for (const modId of requiredModules) {
+    const hasPerm = permisosCopy.some(pm => pm.id_personal === kefrenId && pm.id_modulo === modId);
     if (!hasPerm) {
-      permisosCopy.push(perm);
+      permisosCopy.push({ id_personal: kefrenId, id_modulo: modId });
       modified = true;
     }
   }
