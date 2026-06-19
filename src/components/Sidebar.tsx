@@ -12,6 +12,8 @@ interface SidebarProps {
   currentUser: Personal | null;
   onLogout: () => void;
   userPermissions: Modulo[];
+  cloudStatus: { connected: boolean; error: string | null; lastSync: string };
+  dbDetails: { projectId: string; authDomain: string; firestoreDatabaseId: string; storageBucket: string };
 }
 
 export default function Sidebar({
@@ -19,7 +21,9 @@ export default function Sidebar({
   onChangeTab,
   currentUser,
   onLogout,
-  userPermissions
+  userPermissions,
+  cloudStatus,
+  dbDetails
 }: SidebarProps) {
   
   // Check permission for a tab
@@ -110,6 +114,31 @@ export default function Sidebar({
           <span className="material-symbols-outlined mr-2 text-base">logout</span>
           <span>Cerrar Sesión</span>
         </button>
+      </div>
+
+      {/* Firebase Cloud Connection Monitor */}
+      <div className="mt-auto px-3 pt-3 border-t border-[#1e293b]/70">
+        <div className="bg-slate-950/80 border border-slate-800/80 p-2 rounded flex flex-col gap-1 font-mono text-[9px] text-left">
+          <div className="flex items-center justify-between">
+            <span className="text-slate-450 font-sans font-bold">BD CLOUD FIRESTORE:</span>
+            <span className="flex items-center gap-1">
+              <span className={`w-1.5 h-1.5 rounded-full ${cloudStatus.connected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+              <span className={`font-bold font-sans ${cloudStatus.connected ? 'text-emerald-400' : 'text-amber-400'}`}>
+                {cloudStatus.connected ? 'ONLINE' : 'OFFLINE'}
+              </span>
+            </span>
+          </div>
+          <div className="space-y-0.5 text-slate-500">
+            <div className="truncate"><span className="text-slate-400 font-semibold font-sans">Project:</span> {dbDetails.projectId}</div>
+            <div className="truncate"><span className="text-slate-400 font-semibold font-sans">Database:</span> {dbDetails.firestoreDatabaseId}</div>
+            <div><span className="text-slate-400 font-semibold font-sans font-medium">Last Sync:</span> <span className="text-slate-300">{cloudStatus.lastSync}</span></div>
+          </div>
+          {cloudStatus.error && (
+            <div className="text-rose-400 text-[8px] border-t border-rose-500/10 pt-1 mt-0.5 truncate">
+              {cloudStatus.error}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="px-4 mt-2 text-[9px] text-slate-500 font-mono uppercase tracking-widest text-center">

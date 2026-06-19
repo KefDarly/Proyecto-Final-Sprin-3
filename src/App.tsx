@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { getDB, saveDB, resetDB } from './db';
 import { Personal, Modulo, PermisoModulo, Monitoreo, Vehiculo, Conductor, Ruta, Incidencia, Mantenimiento } from './types';
+import { subscribeToFirestore, saveToFirestore, dbConnectionDetails } from './firebase';
 import Login from './components/Login';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -19,6 +20,30 @@ import PersonalView from './components/PersonalView';
 export default function App() {
   // Database active simulated state reactive
   const [db, setDb] = useState(() => getDB());
+
+  // Cloud Firestore database connection status
+  const [cloudStatus, setCloudStatus] = useState({
+    connected: false,
+    error: null as string | null,
+    lastSync: 'Conectando...'
+  });
+
+  // Subscribe to real-time updates from Firebase Cloud Firestore
+  useEffect(() => {
+    const defaultData = getDB();
+    const unsubscribe = subscribeToFirestore(
+      (cloudData) => {
+        setDb(cloudData);
+        saveDB(cloudData);
+      },
+      (status) => {
+        setCloudStatus(status);
+      },
+      defaultData
+    );
+
+    return () => unsubscribe();
+  }, []);
 
   // Logged user profile session
   const [currentUser, setCurrentUser] = useState<Personal | null>(() => {
@@ -48,11 +73,15 @@ export default function App() {
     }
   }, [currentUser]);
 
-  // Keep db synced to storage
+  // Keep db synced to storage & Firebase Cloud Firestore
   const updateDBState = (updater: (prev: typeof db) => typeof db) => {
     setDb((prev) => {
       const next = updater(prev);
       saveDB(next);
+      // Synchronize changes to Cloud instantly
+      saveToFirestore(next).catch((err) => {
+        console.error('Failed to sync to Cloud Firestore:', err);
+      });
       return next;
     });
   };
@@ -373,6 +402,8 @@ export default function App() {
         currentUser={currentUser}
         onLogout={handleLogout}
         userPermissions={userPermissions}
+        cloudStatus={cloudStatus}
+        dbDetails={dbConnectionDetails}
       />
 
       {/* RIGHT DISPLAY STAGE */}
@@ -461,23 +492,103 @@ export default function App() {
           )}
 
           {currentTab === 'ajustes' && (
-            <div className="bg-surface-container border border-outline-variant p-6 rounded-xl max-w-2xl mx-auto space-y-4">
-              <h3 className="text-xl font-bold font-sans">Ajustes del Sistema</h3>
-              <p className="text-xs text-on-surface-variant font-medium">Control de bases de datos simétrica y restauración de valores de fábrica.</p>
-              
-              <div className="pt-4 border-t border-outline-variant space-y-3">
-                <button
-                  onClick={() => {
-                    if (confirm('¿Seguro que desea resetear la base de datos a los valores de fábrica de Petro Mapi SAC? Se perderán los registros creados.')) {
-                      resetDB();
-                      setDb(getDB());
-                      alert('Base de Datos restaurada.');
-                    }
-                  }}
-                  className="bg-error/15 hover:bg-error/25 text-error px-4 py-2 rounded text-xs font-bold uppercase transition-all"
-                >
-                  Restaurar Base de Datos Original
-                </button>
+            <div className="space-y-6 max-w-3xl mx-auto select-none">
+              {/* Database Connection Status Card */}
+              <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div>
+                    <h3 className="text-base font-black font-sans text-slate-100 uppercase tracking-wider">📦 Conexión a Base de Datos Cloud</h3>
+                    <p className="text-[11px] text-slate-400 font-mono">Estado de sincronización en caliente con el clúster de Google Cloud Platform.</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-3.5 h-3.5 rounded-full ${cloudStatus.connected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+                    <span className={`text-xs font-black font-sans uppercase tracking-wider ${cloudStatus.connected ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {cloudStatus.connected ? 'Conectado (Live)' : 'Buscando servidor...'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div className="bg-slate-950 p-3 rounded border border-slate-850 space-y-2">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 font-sans">Detalles del Endpoint</p>
+                    <div className="space-y-1 font-mono text-slate-300">
+                      <div><strong className="text-slate-400">Motor:</strong> Firebase Firestore v9.x</div>
+                      <div><strong className="text-slate-400">Proyecto GCP:</strong> {dbConnectionDetails.projectId}</div>
+                      <div><strong className="text-slate-400">Database Id:</strong> {dbConnectionDetails.firestoreDatabaseId}</div>
+                      <div><strong className="text-slate-400">Región:</strong> us-central1 (USA Central)</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-950 p-3 rounded border border-slate-850 space-y-2">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 font-sans">Sincronización en Tiempo Real</p>
+                    <div className="space-y-1 font-mono text-slate-300">
+                      <div><strong className="text-slate-400">Estrategia:</strong> Client-side Snapshot Listener</div>
+                      <div><strong className="text-slate-400">Último Sync:</strong> <span className="text-emerald-400 font-bold">{cloudStatus.lastSync}</span></div>
+                      <div><strong className="text-slate-400">Bucket Almacén:</strong> {dbConnectionDetails.storageBucket}</div>
+                      <div><strong className="text-slate-400">Dominio Auth:</strong> {dbConnectionDetails.authDomain}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 font-sans">Cadena de Inicialización de la Conexión (JSON de Configuración)</p>
+                  <pre className="bg-slate-950 p-3 rounded border border-slate-850 text-[10px] text-slate-400 font-mono overflow-x-auto select-all leading-relaxed">
+{JSON.stringify({
+  apiKey: "AIzaSyDQKFNgptOXvbgzv34wFVWi043amA1dn4E",
+  authDomain: dbConnectionDetails.authDomain,
+  projectId: dbConnectionDetails.projectId,
+  storageBucket: dbConnectionDetails.storageBucket,
+  messagingSenderId: "571329519284",
+  appId: "1:571329519284:web:16b7d7d4d9a501137781e1"
+}, null, 2)}
+                  </pre>
+                  <p className="text-[9px] text-slate-500 font-mono">⚠️ Nota: Este archivo de configuración pública conecta el cliente web React directamente a su instancia aprovisionada en Google Firebase.</p>
+                </div>
+              </div>
+
+              {/* Maintenance Tools */}
+              <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl space-y-4">
+                <div>
+                  <h3 className="text-base font-black font-sans text-slate-100 uppercase tracking-wider">🛠️ Caja de Herramientas de Administración</h3>
+                  <p className="text-[11px] text-slate-400 font-mono">Herramientas críticas para mantenimiento de datos y reinicio maestro del sistema.</p>
+                </div>
+
+                <div className="pt-2 flex flex-wrap gap-3">
+                  <button
+                    onClick={() => {
+                      if (confirm('¿Seguro que desea resetear la base de datos a los valores de fábrica de Petro Mapi SAC? Se reconstruirán todos los datos locales y se subirán a Cloud Firestore.')) {
+                        resetDB();
+                        const initial = getDB();
+                        setDb(initial);
+                        saveToFirestore(initial)
+                          .then(() => {
+                            alert('Base de Datos restaurada y sincronizada exitosamente con la nube.');
+                          })
+                          .catch((err) => {
+                            alert('Base de Datos restaurada localmente, pero falló la sincronización con la nube: ' + err.message);
+                          });
+                      }
+                    }}
+                    className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 px-4 py-2.5 rounded text-xs font-black uppercase tracking-wider border border-rose-500/20 hover:border-rose-500/30 transition-all cursor-pointer"
+                  >
+                    Restaurar Base de Datos Original (Cloud Push)
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      saveToFirestore(db)
+                        .then(() => {
+                          alert('¡Éxito! Todos los datos locales actuales de la flota han sido subidos y guardados en Google Firebase Firestore.');
+                        })
+                        .catch((err) => {
+                          alert('Error al realizar guardado forzado en la nube: ' + err.message);
+                        });
+                    }}
+                    className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-4 py-2.5 rounded text-xs font-black uppercase tracking-wider border border-emerald-500/20 hover:border-emerald-500/30 transition-all cursor-pointer"
+                  >
+                    Forzar PUSH manual a Nube
+                  </button>
+                </div>
               </div>
             </div>
           )}
