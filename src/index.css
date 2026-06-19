@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+@theme {
+  --color-secondary-fixed: #d1fae5;
+  --color-on-primary: #022c22;
+  --color-primary: #34d399;
+  --color-tertiary-fixed: #fef3c7;
+  --color-on-background: #f8fafc;
+  --color-on-secondary-fixed-variant: #064e3b;
+  --color-secondary-container: rgba(16, 185, 129, 0.12);
+  --color-on-primary-container: #a7f3d0;
+  --color-on-primary-fixed: #022c22;
+  --color-on-surface-variant: #94a3b8;
+  --color-inverse-surface: #f1f5f9;
+  --color-on-secondary-container: #10b981;
+  --color-on-tertiary-fixed: #78350f;
+  --color-surface: #0b0f19;
+  --color-on-secondary-fixed: #065f46;
+  --color-surface-bright: #1e293b;
+  --color-secondary-fixed-dim: #6ee7b7;
+  --color-surface-tint: #10b981;
+  --color-on-tertiary-container: #fbbf24;
+  --color-tertiary-container: rgba(245, 158, 11, 0.1);
+  --color-on-surface: #cbd5e1;
+  --color-error: #f43f5e;
+  --color-surface-dim: #070a13;
+  --color-surface-container-high: #1e293b;
+  --color-on-error: #4c0519;
+  --color-secondary: #10b981;
+  --color-surface-container-lowest: #020617;
+  --color-outline: #475569;
+  --color-on-error-container: #ffe4e6;
+  --color-tertiary: #f59e0b;
+  --color-tertiary-fixed-dim: #f59e0b;
+  --color-surface-container-highest: #334155;
+  --color-surface-container: #0d1527;
+  --color-error-container: rgba(244, 63, 94, 0.15);
+  --color-surface-container-low: #090d16;
+  --color-on-secondary: #ffffff;
+  --color-primary-container: rgba(52, 211, 153, 0.15);
+  --color-primary-fixed-dim: #a7f3d0;
+  --color-on-tertiary-fixed-variant: #78350f;
+  --color-inverse-on-surface: #0f172a;
+  --color-on-primary-fixed-variant: #065f46;
+  --color-on-tertiary: #ffffff;
+  --color-inverse-primary: #059669;
+  --color-background: #020617;
+  --color-surface-variant: #1e293b;
+  --color-outline-variant: #1e293b;
+  --color-primary-fixed: #e6fffa;
+  
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+/* Custom Scrollbars suited for military/logistics control centers */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #10b981;
+}
+
+/* Industrial glass/card effects */
+.industrial-glass {
+  background: rgba(13, 21, 39, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid #1e293b;
+}
+
+.glow-hover:hover {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* HIGH DENSITY STRUCTURAL UTILITIES OVERRIDES */
+.p-10 {
+  padding: 1.25rem !important; /* snugs the main viewing space */
+}
+.p-8 {
+  padding: 1rem !important; /* compacts cards and inputs */
+}
+.p-5, .p-6 {
+  padding: 0.75rem !important; /* compact spaces */
+}
+.py-6 {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}
+.mb-8 {
+  margin-bottom: 0.75rem !important;
+}
+.mb-4, .mb-6 {
+  margin-bottom: 0.5rem !important;
+}
+.gap-6 {
+  gap: 0.75rem !important;
+}
+.space-y-6 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 0.75rem !important;
+}
+.rounded-xl {
+  border-radius: 4px !important;
+}
+.rounded-2xl {
+  border-radius: 6px !important;
+}
+.rounded-3xl {
+  border-radius: 8px !important;
+}
+.rounded-lg {
+  border-radius: 3px !important;
+}
+
+/* Table Snugness and visual guides */
+table td {
+  padding: 0.35rem 0.5rem !important;
+}
+table th {
+  padding: 0.35rem 0.5rem !important;
+}
+

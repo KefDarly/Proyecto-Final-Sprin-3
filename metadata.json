@@ -1,0 +1,6 @@
+{
+  "name": "Petro Mapi - Sistemas Logísticos",
+  "description": "Sistema industrial y de monitoreo en vivo para la gestión de flota pesada, tripulantes, rutas e incidencias de Petro Mapi SAC.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
