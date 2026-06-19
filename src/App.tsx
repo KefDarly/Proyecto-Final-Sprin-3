@@ -21,6 +21,12 @@ export default function App() {
   // Database active simulated state reactive
   const [db, setDb] = useState(() => getDB());
 
+  // Togglable Cloud Sync State (persists in localStorage)
+  const [cloudSyncEnabled, setCloudSyncEnabled] = useState(() => {
+    const saved = localStorage.getItem('petromapi_cloud_sync_enabled');
+    return saved !== 'false';
+  });
+
   // Cloud Firestore database connection status
   const [cloudStatus, setCloudStatus] = useState({
     connected: false,
@@ -28,8 +34,17 @@ export default function App() {
     lastSync: 'Conectando...'
   });
 
-  // Subscribe to real-time updates from Firebase Cloud Firestore
+  // Subscribe to real-time updates from Firebase Cloud Firestore if enabled
   useEffect(() => {
+    if (!cloudSyncEnabled) {
+      setCloudStatus({
+        connected: false,
+        error: 'Sincronización desactivada en Ajustes (Modo Local Seguro).',
+        lastSync: 'Local Cache'
+      });
+      return;
+    }
+
     const defaultData = getDB();
     const unsubscribe = subscribeToFirestore(
       (cloudData) => {
@@ -49,7 +64,7 @@ export default function App() {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [cloudSyncEnabled]);
 
   // Logged user profile session
   const [currentUser, setCurrentUser] = useState<Personal | null>(null);
@@ -74,10 +89,12 @@ export default function App() {
     setDb((prev) => {
       const next = updater(prev);
       saveDB(next);
-      // Synchronize changes to Cloud instantly
-      saveToFirestore(next).catch((err) => {
-        console.error('Failed to sync to Cloud Firestore:', err);
-      });
+      if (cloudSyncEnabled) {
+        // Synchronize changes to Cloud instantly
+        saveToFirestore(next).catch((err) => {
+          console.error('Failed to sync to Cloud Firestore:', err);
+        });
+      }
       return next;
     });
   };
@@ -544,9 +561,34 @@ export default function App() {
 
               {/* Maintenance Tools */}
               <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl space-y-4">
-                <div>
-                  <h3 className="text-base font-black font-sans text-slate-100 uppercase tracking-wider">🛠️ Caja de Herramientas de Administración</h3>
-                  <p className="text-[11px] text-slate-400 font-mono">Herramientas críticas para mantenimiento de datos y reinicio maestro del sistema.</p>
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3 flex-wrap gap-4">
+                  <div>
+                    <h3 className="text-base font-black font-sans text-slate-100 uppercase tracking-wider">🛠️ Caja de Herramientas de Administración</h3>
+                    <p className="text-[11px] text-slate-400 font-mono">Herramientas críticas para mantenimiento de datos y reinicio maestro del sistema.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextVal = !cloudSyncEnabled;
+                      setCloudSyncEnabled(nextVal);
+                      localStorage.setItem('petromapi_cloud_sync_enabled', String(nextVal));
+                    }}
+                    className={`px-3.5 py-2 rounded text-[10px] font-black uppercase font-sans tracking-wider border cursor-pointer transition-all ${
+                      cloudSyncEnabled
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
+                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
+                    }`}
+                  >
+                    {cloudSyncEnabled ? '🔄 Sincronización: ACTIVA (Nube)' : '🔒 Sincronización: APAGADA (Local Seguro)'}
+                  </button>
+                </div>
+
+                <div className="bg-slate-950 p-4 rounded border border-slate-850 text-xs text-slate-300 space-y-1.5 leading-relaxed">
+                  <p className="font-bold text-slate-200">💡 Indicaciones de Uso sobre la Caja de Herramientas:</p>
+                  <ul className="list-disc pl-4 space-y-1 text-slate-450 text-[11px]">
+                    <li><strong>Sincronización ACTIVA:</strong> Trata de escribir cada cambio directamente en la nube. Si tienes restricciones de permisos en Google Cloud, los cambios podrían no aplicarse y ser revertidos de inmediato por el servidor.</li>
+                    <li><strong>Sincronización APAGADA:</strong> Activa el <strong>Modo Local Seguro</strong>. Todos tus datos nuevos (incluyendo trabajadores, vehículos o rutas añadidas) se grabarán de forma persistente en tu navegador sin que el servidor los borre. ¡Es la opción recomendada si notas que tus registros no se guardan de forma permanente!</li>
+                  </ul>
                 </div>
 
                 <div className="pt-2 flex flex-wrap gap-3">
@@ -556,13 +598,21 @@ export default function App() {
                         resetDB();
                         const initial = getDB();
                         setDb(initial);
-                        saveToFirestore(initial)
-                          .then(() => {
-                            alert('Base de Datos restaurada y sincronizada exitosamente con la nube.');
-                          })
-                          .catch((err) => {
-                            alert('Base de Datos restaurada localmente, pero falló la sincronización con la nube: ' + err.message);
-                          });
+                        
+                        if (cloudSyncEnabled) {
+                          saveToFirestore(initial)
+                            .then(() => {
+                              alert('Base de Datos restaurada localmente y sincronizada con la nube exitosamente.');
+                            })
+                            .catch((err) => {
+                              console.warn('Restore sync failed:', err);
+                              setCloudSyncEnabled(false);
+                              localStorage.setItem('petromapi_cloud_sync_enabled', 'false');
+                              alert('La base de datos se restauró exitosamente a nivel Local, pero falló la sincronización con la nube: ' + err.message + '\n\nSe ha activado automáticamente el Sincronizador en Modo Local Seguro para proteger tus datos de ser sobreescritos por registros antiguos.');
+                            });
+                        } else {
+                          alert('¡Éxito! Base de Datos restaurada a valores de fábrica localmente (Sincronización Cloud inactiva).');
+                        }
                       }
                     }}
                     className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 px-4 py-2.5 rounded text-xs font-black uppercase tracking-wider border border-rose-500/20 hover:border-rose-500/30 transition-all cursor-pointer"
@@ -575,9 +625,11 @@ export default function App() {
                       saveToFirestore(db)
                         .then(() => {
                           alert('¡Éxito! Todos los datos locales actuales de la flota han sido subidos y guardados en Google Firebase Firestore.');
+                          setCloudSyncEnabled(true);
+                          localStorage.setItem('petromapi_cloud_sync_enabled', 'true');
                         })
                         .catch((err) => {
-                          alert('Error al realizar guardado forzado en la nube: ' + err.message);
+                          alert('Error al realizar guardado forzado en la nube: ' + err.message + '\n\nDetalles: Este error suele indicar que las Reglas de Seguridad (Security Rules) de tu base de datos Firestore en Google Cloud están configuradas en modo cerrado. Desactiva la Sincronización Nube arriba para trabajar con Modo Local de forma 100% libre de fallos.');
                         });
                     }}
                     className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-4 py-2.5 rounded text-xs font-black uppercase tracking-wider border border-emerald-500/20 hover:border-emerald-500/30 transition-all cursor-pointer"
