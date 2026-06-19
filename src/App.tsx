@@ -52,17 +52,7 @@ export default function App() {
   }, []);
 
   // Logged user profile session
-  const [currentUser, setCurrentUser] = useState<Personal | null>(() => {
-    const raw = localStorage.getItem('petromapi_session_user');
-    if (raw) {
-      try {
-        return JSON.parse(raw);
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  });
+  const [currentUser, setCurrentUser] = useState<Personal | null>(null);
 
   // Navigation tab route state
   const [currentTab, setCurrentTab] = useState('dashboard');
