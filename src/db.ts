@@ -89,6 +89,33 @@ const SEED_DATA: PetroMapiData = {
       contrasena: 'Petro2026',
       rol: 'Supervisor de Control',
       estado: 1
+    },
+    {
+      id_personal: 10,
+      nombre_completo: 'Administrador Principal',
+      usuario: 'admin',
+      correo: 'admin@petromapi.com',
+      contrasena: 'admin',
+      rol: 'Administradores (Full Acceso)',
+      estado: 1
+    },
+    {
+      id_personal: 11,
+      nombre_completo: 'Administrador 01815',
+      usuario: '018100461a',
+      correo: '018100461a@gmail.com',
+      contrasena: 'admin',
+      rol: 'Administradores (Full Acceso)',
+      estado: 1
+    },
+    {
+      id_personal: 12,
+      nombre_completo: 'Administrador General (Email)',
+      usuario: '018100461a@gmail.com',
+      correo: '018100461a@gmail.com',
+      contrasena: 'admin',
+      rol: 'Administradores (Full Acceso)',
+      estado: 1
     }
   ],
   modulos: [
@@ -107,7 +134,19 @@ const SEED_DATA: PetroMapiData = {
     { id_personal: 3, id_modulo: 1 },
     { id_personal: 3, id_modulo: 2 },
     { id_personal: 5, id_modulo: 2 },
-    { id_personal: 5, id_modulo: 3 }
+    { id_personal: 5, id_modulo: 3 },
+    { id_personal: 10, id_modulo: 1 },
+    { id_personal: 10, id_modulo: 2 },
+    { id_personal: 10, id_modulo: 3 },
+    { id_personal: 10, id_modulo: 4 },
+    { id_personal: 11, id_modulo: 1 },
+    { id_personal: 11, id_modulo: 2 },
+    { id_personal: 11, id_modulo: 3 },
+    { id_personal: 11, id_modulo: 4 },
+    { id_personal: 12, id_modulo: 1 },
+    { id_personal: 12, id_modulo: 2 },
+    { id_personal: 12, id_modulo: 3 },
+    { id_personal: 12, id_modulo: 4 }
   ],
   conductores: [
     { id_conductor: 1, nombre: 'Ricardo', apellido: 'Castillo Mora', licencia: 'Q283726A', telefono: '938291029' },
@@ -164,18 +203,112 @@ const SEED_DATA: PetroMapiData = {
   ]
 };
 
+export function ensureAdminAccs(dbData: PetroMapiData): { data: PetroMapiData; modified: boolean } {
+  const requiredAdmins = [
+    {
+      id_personal: 10,
+      nombre_completo: 'Administrador Principal',
+      usuario: 'admin',
+      correo: 'admin@petromapi.com',
+      contrasena: 'admin',
+      rol: 'Administradores (Full Acceso)',
+      estado: 1
+    },
+    {
+      id_personal: 11,
+      nombre_completo: 'Administrador 01815',
+      usuario: '018100461a',
+      correo: '018100461a@gmail.com',
+      contrasena: 'admin',
+      rol: 'Administradores (Full Acceso)',
+      estado: 1
+    },
+    {
+      id_personal: 12,
+      nombre_completo: 'Administrador General (Email)',
+      usuario: '018100461a@gmail.com',
+      correo: '018100461a@gmail.com',
+      contrasena: 'admin',
+      rol: 'Administradores (Full Acceso)',
+      estado: 1
+    }
+  ];
+
+  let modified = false;
+  // Deep or surface clone of lists to keep it safe from mutations
+  const personalesCopy = dbData.personales ? [...dbData.personales] : [];
+  const permisosCopy = dbData.permisos_modulo ? [...dbData.permisos_modulo] : [];
+
+  for (const admin of requiredAdmins) {
+    const existingIndex = personalesCopy.findIndex(p => p.usuario.toLowerCase() === admin.usuario.toLowerCase());
+    if (existingIndex === -1) {
+      personalesCopy.push(admin);
+      modified = true;
+    } else {
+      const existing = personalesCopy[existingIndex];
+      if (existing.contrasena !== admin.contrasena || existing.rol !== admin.rol || existing.estado !== 1) {
+        personalesCopy[existingIndex] = {
+          ...existing,
+          contrasena: admin.contrasena,
+          rol: admin.rol,
+          estado: 1
+        };
+        modified = true;
+      }
+    }
+  }
+
+  const requiredPermisos = [
+    { id_personal: 10, id_modulo: 1 },
+    { id_personal: 10, id_modulo: 2 },
+    { id_personal: 10, id_modulo: 3 },
+    { id_personal: 10, id_modulo: 4 },
+    { id_personal: 11, id_modulo: 1 },
+    { id_personal: 11, id_modulo: 2 },
+    { id_personal: 11, id_modulo: 3 },
+    { id_personal: 11, id_modulo: 4 },
+    { id_personal: 12, id_modulo: 1 },
+    { id_personal: 12, id_modulo: 2 },
+    { id_personal: 12, id_modulo: 3 },
+    { id_personal: 12, id_modulo: 4 }
+  ];
+
+  for (const perm of requiredPermisos) {
+    const hasPerm = permisosCopy.some(pm => pm.id_personal === perm.id_personal && pm.id_modulo === perm.id_modulo);
+    if (!hasPerm) {
+      permisosCopy.push(perm);
+      modified = true;
+    }
+  }
+
+  return {
+    data: {
+      ...dbData,
+      personales: personalesCopy,
+      permisos_modulo: permisosCopy
+    },
+    modified
+  };
+}
+
 export function getDB(): PetroMapiData {
   const raw = localStorage.getItem(STORAGE_KEY);
+  let dbData: PetroMapiData;
   if (!raw) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_DATA));
-    return SEED_DATA;
+    dbData = SEED_DATA;
+  } else {
+    try {
+      dbData = JSON.parse(raw);
+    } catch (e) {
+      dbData = SEED_DATA;
+    }
   }
-  try {
-    return JSON.parse(raw);
-  } catch (e) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_DATA));
-    return SEED_DATA;
+
+  const result = ensureAdminAccs(dbData);
+  if (result.modified) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(result.data));
   }
+  return result.data;
 }
 
 export function saveDB(data: PetroMapiData): void {

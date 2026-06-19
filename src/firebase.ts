@@ -33,13 +33,22 @@ export function subscribeToFirestore(
             onStatusChange({ connected: true, error: null, lastSync: new Date().toLocaleTimeString() });
           })
           .catch((err) => {
-            console.error('Error writing initial seed to Firestore:', err);
-            onStatusChange({ connected: false, error: err.message, lastSync: 'Error de inicialización' });
+            console.warn('Notice: Writing initial seed to Firestore deferred/queued:', err.message);
           });
       }
     })
     .catch((err) => {
-      console.error('Error reading initial doc from Firestore:', err);
+      const isOfflineMsg = err?.message?.toLowerCase().includes('offline') || err?.code === 'unavailable';
+      if (isOfflineMsg) {
+        console.warn('Firestore is offline. Scaling down to Local Storage backup mode gracefully.', err.message);
+        onStatusChange({
+          connected: false,
+          error: 'Trabajando en modo local seguro. Se sincronizará automáticamente al detectar conexión.',
+          lastSync: 'Local Cache'
+        });
+      } else {
+        console.warn('Notice: Firestore getDoc error handled gracefully:', err.message || err);
+      }
     });
 
   // Real-time listener
@@ -63,7 +72,7 @@ export function subscribeToFirestore(
       }
     },
     (error) => {
-      console.error('Firestore listener error:', error);
+      console.warn('Firestore snapshot/sync listener warning:', error.message || error);
       onStatusChange({
         connected: false,
         error: error.message,
@@ -82,7 +91,8 @@ export async function saveToFirestore(data: PetroMapiData): Promise<void> {
   try {
     await setDoc(stateDocRef, data);
   } catch (error) {
-    console.error('Error saving state to Firestore:', error);
+    console.warn('Handling Firestore save queue status background:', error);
+    // Background queue handles offline, we throw to allow callers to present UI if needed but don't dump critical errors
     throw error;
   }
 }

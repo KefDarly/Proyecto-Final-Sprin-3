@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { getDB, saveDB, resetDB } from './db';
+import { getDB, saveDB, resetDB, ensureAdminAccs } from './db';
 import { Personal, Modulo, PermisoModulo, Monitoreo, Vehiculo, Conductor, Ruta, Incidencia, Mantenimiento } from './types';
 import { subscribeToFirestore, saveToFirestore, dbConnectionDetails } from './firebase';
 import Login from './components/Login';
@@ -33,8 +33,14 @@ export default function App() {
     const defaultData = getDB();
     const unsubscribe = subscribeToFirestore(
       (cloudData) => {
-        setDb(cloudData);
-        saveDB(cloudData);
+        const sanitized = ensureAdminAccs(cloudData);
+        setDb(sanitized.data);
+        saveDB(sanitized.data);
+        if (sanitized.modified) {
+          saveToFirestore(sanitized.data).catch((err) => {
+            console.warn('Deferred back-sync of admins to cloud:', err.message);
+          });
+        }
       },
       (status) => {
         setCloudStatus(status);
